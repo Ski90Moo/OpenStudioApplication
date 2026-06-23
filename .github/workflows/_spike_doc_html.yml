@@ -68,7 +68,39 @@ jobs:
           else
             echo "NO TEX4HT BINARY FOUND"
           fi
-          ls -la *.html *.css 2>/dev/null || echo "NO HTML PRODUCED"
+          echo "=== after htxelatex wrapper ==="
+          ls -la *.html *.css *.idv *.lg 2>/dev/null || echo "NO HTML PRODUCED YET"
+
+      - name: tex4ht/t4ht usage reference
+        run: |
+          echo "=== tex4ht --help ===" ; tex4ht --help 2>&1 | head -40 || true
+          echo "=== t4ht --help ===" ; t4ht --help 2>&1 | head -40 || true
+
+      - name: Manually drive tex4ht/t4ht postprocessing (wrapper skipped this due to missing-char warnings)
+        working-directory: ep/doc/input-output-reference
+        continue-on-error: true
+        run: |
+          export TEXINPUTS=..:
+          if ls *.html >/dev/null 2>&1; then
+            echo "HTML already produced by wrapper, skipping manual postprocessing"
+          else
+            echo "ATTEMPT 1: t4ht alone"
+            t4ht input-output-reference "html,2,fn-in" > attempt1_t4ht.log 2>&1
+            ls *.html 2>/dev/null && echo "ATTEMPT1 (t4ht) SUCCESS" || true
+          fi
+          if ! ls *.html >/dev/null 2>&1; then
+            echo "ATTEMPT 2: tex4ht alone"
+            tex4ht input-output-reference "html,2,fn-in" > attempt2_tex4ht.log 2>&1
+            ls *.html 2>/dev/null && echo "ATTEMPT2 (tex4ht) SUCCESS" || true
+          fi
+          if ! ls *.html >/dev/null 2>&1; then
+            echo "ATTEMPT 3: tex4ht then t4ht"
+            tex4ht input-output-reference "html,2,fn-in" > attempt3a_tex4ht.log 2>&1
+            t4ht input-output-reference "html,2,fn-in" > attempt3b_t4ht.log 2>&1
+            ls *.html 2>/dev/null && echo "ATTEMPT3 (tex4ht+t4ht) SUCCESS" || true
+          fi
+          echo "=== final dir listing ==="
+          ls -la *.html *.css *.log 2>/dev/null || echo "STILL NO HTML PRODUCED"
 
       - name: Collect artifacts
         if: always()
@@ -81,6 +113,7 @@ jobs:
           cp ep/doc/input-output-reference/*.css out/make4ht/ 2>/dev/null || true
           cp ep/doc/input-output-reference/*.log out/logs/ 2>/dev/null || true
           cp ep/doc/input-output-reference/*.lg out/logs/ 2>/dev/null || true
+          cp ep/doc/input-output-reference/attempt*.log out/logs/ 2>/dev/null || true
 
       - uses: actions/upload-artifact@v4
         if: always()
