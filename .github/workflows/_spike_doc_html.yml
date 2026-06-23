@@ -1,0 +1,74 @@
+name: "[SPIKE] EnergyPlus doc HTML feasibility"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  spike:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Sparse checkout EnergyPlus doc folder (v25.2.0)
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse --branch v25.2.0 https://github.com/NatLabRockies/EnergyPlus.git ep
+          cd ep
+          git sparse-checkout set doc
+
+      - name: Install LaTeX + tex4ht + poppler-utils
+        run: |
+          sudo apt update
+          sudo apt install -y texlive texlive-xetex texlive-science texlive-latex-extra tex4ht poppler-utils
+
+      - name: Generate title.tex from title.tex.in
+        working-directory: ep/doc
+        run: |
+          sed -e 's/\${CMAKE_VERSION_MAJOR}/25/' \
+              -e 's/\${CMAKE_VERSION_MINOR}/2/' \
+              -e 's/\${CMAKE_VERSION_PATCH}/0/' \
+              -e 's/\${CMAKE_VERSION_BUILD}/spike-poc/' \
+              title.tex.in > title.tex
+
+      - name: Build official PDF via xelatex (matches EnergyPlus's own CI)
+        working-directory: ep/doc/input-output-reference
+        continue-on-error: true
+        run: |
+          export TEXINPUTS=..:
+          for i in 1 2 3; do
+            xelatex -interaction=nonstopmode input-output-reference.tex || true
+          done
+          ls -la *.pdf || echo "NO PDF PRODUCED"
+
+      - name: Convert official PDF to HTML via pdftohtml
+        working-directory: ep/doc/input-output-reference
+        continue-on-error: true
+        run: |
+          if [ -f input-output-reference.pdf ]; then
+            pdftohtml -noframes input-output-reference.pdf pdftohtml-output
+          else
+            echo "Skipping, no PDF"
+          fi
+
+      - name: Convert to HTML via make4ht
+        working-directory: ep/doc/input-output-reference
+        continue-on-error: true
+        run: |
+          export TEXINPUTS=..:
+          make4ht -u -x input-output-reference.tex "html,2,fn-in" || echo "make4ht FAILED, see log"
+          ls -la *.html *.css 2>/dev/null || echo "NO HTML PRODUCED"
+
+      - name: Collect artifacts
+        if: always()
+        run: |
+          mkdir -p out/make4ht out/pdftohtml out/logs
+          cp ep/doc/input-output-reference/input-output-reference.pdf out/ 2>/dev/null || true
+          cp ep/doc/input-output-reference/pdftohtml-output*.html out/pdftohtml/ 2>/dev/null || true
+          cp ep/doc/input-output-reference/pdftohtml-output*.png out/pdftohtml/ 2>/dev/null || true
+          cp ep/doc/input-output-reference/input-output-reference*.html out/make4ht/ 2>/dev/null || true
+          cp ep/doc/input-output-reference/*.css out/make4ht/ 2>/dev/null || true
+          cp ep/doc/input-output-reference/*.log out/logs/ 2>/dev/null || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: doc-html-poc
+          path: out
+          if-no-files-found: warn
