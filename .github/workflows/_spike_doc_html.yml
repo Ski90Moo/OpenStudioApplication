@@ -60,11 +60,11 @@ jobs:
         run: |
           export TEXINPUTS=..:
           if command -v make4ht >/dev/null; then
-            make4ht -u -x input-output-reference.tex "html,2,fn-in"
+            make4ht -u -x -e "-interaction=nonstopmode" input-output-reference.tex "html,2,fn-in"
           elif command -v htxelatex >/dev/null; then
-            htxelatex input-output-reference "html,2,fn-in"
+            htxelatex input-output-reference "html,2,fn-in" "" "" "-interaction=nonstopmode"
           elif command -v htlatex >/dev/null; then
-            htlatex input-output-reference "html,2,fn-in"
+            htlatex input-output-reference "html,2,fn-in" "" "" "-interaction=nonstopmode"
           else
             echo "NO TEX4HT BINARY FOUND"
           fi
