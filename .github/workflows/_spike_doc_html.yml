@@ -1,6 +1,8 @@
 name: "[SPIKE] EnergyPlus doc HTML feasibility"
 
 on:
+  push:
+    branches: [spike/doc-html-poc]
   workflow_dispatch:
 
 jobs:
