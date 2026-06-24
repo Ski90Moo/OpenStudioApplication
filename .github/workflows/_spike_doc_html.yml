@@ -102,6 +102,14 @@ jobs:
           echo "=== final dir listing ==="
           ls -la input-output-reference*.html *.css *.log 2>/dev/null || echo "STILL NO HTML PRODUCED"
 
+      - name: Check .aux file for newlabel entries mapping our known labels to tex4ht/hyperref ids
+        working-directory: ep/doc/input-output-reference
+        run: |
+          echo "=== newlabel entries for our test labels ==="
+          grep -n "newlabel{group-reports}\|newlabel{output-variabledictionary}\|newlabel{field-key-field}\|newlabel{group-simulation-parameters}" input-output-reference.aux || echo "NONE FOUND"
+          echo "=== sample of any 3 newlabel entries, for format reference ==="
+          grep -m 3 "newlabel" input-output-reference.aux || true
+
       - name: Collect artifacts
         if: always()
         run: |
@@ -114,6 +122,7 @@ jobs:
           cp ep/doc/input-output-reference/*.log out/logs/ 2>/dev/null || true
           cp ep/doc/input-output-reference/*.lg out/logs/ 2>/dev/null || true
           cp ep/doc/input-output-reference/attempt*.log out/logs/ 2>/dev/null || true
+          cp ep/doc/input-output-reference/input-output-reference.aux out/logs/ 2>/dev/null || true
 
       - uses: actions/upload-artifact@v4
         if: always()
