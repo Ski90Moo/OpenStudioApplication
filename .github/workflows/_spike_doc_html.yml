@@ -38,14 +38,18 @@ jobs:
           xelatex -interaction=nonstopmode mini.tex || true
           echo "=== confirm tex4ht.sty was actually loaded this time ==="
           grep -c "tex4ht.sty" mini.log || echo "STILL NOT LOADED"
+          echo "=== mini output files (tex4ht.sty loaded directly may write html during the xelatex run itself, not just via separate tex4ht/t4ht binaries) ==="
+          ls -la mini*.html *.css *.4ct 2>/dev/null || echo "NO HTML PRODUCED YET"
+          echo "=== href search across all mini*.html ==="
+          grep -o '<a[^>]*>' mini*.html 2>/dev/null || echo "NO <a> TAGS AT ALL"
+          echo "=== running tex4ht/t4ht anyway in case postprocessing is still needed ==="
           tex4ht -.xdv mini || true
           t4ht mini || true
-          echo "=== mini output files ==="
-          ls -la *.html 2>/dev/null || echo "NO HTML PRODUCED"
-          echo "=== href search in mini.html ==="
-          grep -o '<a[^>]*>' mini.html 2>/dev/null || echo "NO <a> TAGS AT ALL"
-          echo "=== full mini.html for inspection ==="
-          cat mini.html 2>/dev/null || true
+          ls -la mini*.html *.css 2>/dev/null || echo "STILL NO HTML"
+          echo "=== href search after tex4ht/t4ht ==="
+          grep -o '<a[^>]*>' mini*.html 2>/dev/null || echo "NO <a> TAGS AT ALL"
+          echo "=== full content of all mini*.html for inspection ==="
+          cat mini*.html 2>/dev/null || true
 
       - name: Search tex4ht's own files for href-emission logic
         run: |
@@ -140,6 +144,20 @@ jobs:
           echo "=== final dir listing ==="
           ls -la input-output-reference*.html *.css *.log 2>/dev/null || echo "STILL NO HTML PRODUCED"
 
+      - name: Build EnergyPlus doc via direct usepackage{tex4ht} in header.tex (alternative to htxelatex command-line injection) - separate copy to avoid clobbering the known-good output
+        run: |
+          cp -r ep/doc ep/doc-direct
+          sed -i '/\\documentclass/a \\usepackage[html,2,fn-in]{tex4ht}' ep/doc-direct/header.tex
+          cd ep/doc-direct/input-output-reference
+          export TEXINPUTS=..:
+          for i in 1 2 3; do
+            xelatex -interaction=nonstopmode input-output-reference.tex || true
+          done
+          echo "=== files produced directly by this xelatex run ==="
+          ls -la input-output-reference*.html *.css 2>/dev/null | head -20 || echo "NO HTML PRODUCED"
+          echo "=== href counts per file ==="
+          for f in input-output-reference*.html; do echo "$f: $(grep -oi '<a href' "$f" 2>/dev/null | wc -l) hrefs"; done 2>/dev/null || true
+
       - name: Check .aux file for newlabel entries mapping our known labels to tex4ht/hyperref ids
         working-directory: ep/doc/input-output-reference
         run: |
@@ -151,9 +169,12 @@ jobs:
       - name: Collect artifacts
         if: always()
         run: |
-          mkdir -p out/make4ht out/pdftohtml out/logs out/minimal
-          cp /tmp/minimal/mini.html out/minimal/ 2>/dev/null || true
+          mkdir -p out/make4ht out/pdftohtml out/logs out/minimal out/direct
+          cp /tmp/minimal/mini*.html out/minimal/ 2>/dev/null || true
           cp /tmp/minimal/mini.log out/minimal/ 2>/dev/null || true
+          cp ep/doc-direct/input-output-reference/input-output-reference*.html out/direct/ 2>/dev/null || true
+          cp ep/doc-direct/input-output-reference/*.css out/direct/ 2>/dev/null || true
+          cp ep/doc-direct/input-output-reference/input-output-reference.log out/direct/direct.log 2>/dev/null || true
           cp ep/doc/input-output-reference/input-output-reference.pdf out/ 2>/dev/null || true
           cp ep/doc/input-output-reference/pdftohtml-output*.html out/pdftohtml/ 2>/dev/null || true
           cp ep/doc/input-output-reference/pdftohtml-output*.png out/pdftohtml/ 2>/dev/null || true
