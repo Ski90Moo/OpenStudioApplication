@@ -20,6 +20,41 @@ jobs:
           sudo apt update
           sudo apt install -y texlive texlive-xetex texlive-science texlive-latex-extra tex4ht poppler-utils
 
+      - name: Minimal isolated test - does tex4ht+hyperref produce clickable links at all?
+        run: |
+          mkdir -p /tmp/minimal && cd /tmp/minimal
+          cat > mini.tex << 'EOF'
+          \documentclass{article}
+          \usepackage{hyperref}
+          \begin{document}
+          \section{Foo}\label{foo}
+          This is the foo section.
+          \section{Bar}
+          See \hyperref[foo]{the foo section} for details. Also see section~\ref{foo}.
+          \end{document}
+          EOF
+          xelatex -interaction=nonstopmode mini.tex || true
+          xelatex -interaction=nonstopmode mini.tex || true
+          tex4ht -.xdv mini || true
+          t4ht mini || true
+          echo "=== mini output files ==="
+          ls -la *.html 2>/dev/null || echo "NO HTML PRODUCED"
+          echo "=== href search in mini.html ==="
+          grep -o '<a[^>]*>' mini.html 2>/dev/null || echo "NO <a> TAGS AT ALL"
+          echo "=== full mini.html for inspection ==="
+          cat mini.html 2>/dev/null || true
+
+      - name: Search tex4ht's own files for href-emission logic
+        run: |
+          echo "=== href in hyperref-hooks.4ht ==="
+          grep -n "href" /usr/share/texlive/texmf-dist/tex/generic/tex4ht/hyperref-hooks.4ht 2>/dev/null | head -30 || echo "none/not found"
+          echo "=== href in html4.4ht ==="
+          grep -n "href" /usr/share/texlive/texmf-dist/tex/generic/tex4ht/html4.4ht 2>/dev/null | head -30 || echo "none/not found"
+          echo "=== locating and searching htex4ht.def (the hyperref driver for tex4ht) ==="
+          HTEX4HT=$(find /usr/share/texlive -name "htex4ht.def" 2>/dev/null | head -1)
+          echo "found at: $HTEX4HT"
+          grep -n "href\|hyper@link" "$HTEX4HT" 2>/dev/null | head -40 || echo "none/not found"
+
       - name: Generate title.tex from title.tex.in
         working-directory: ep/doc
         run: |
@@ -113,7 +148,9 @@ jobs:
       - name: Collect artifacts
         if: always()
         run: |
-          mkdir -p out/make4ht out/pdftohtml out/logs
+          mkdir -p out/make4ht out/pdftohtml out/logs out/minimal
+          cp /tmp/minimal/mini.html out/minimal/ 2>/dev/null || true
+          cp /tmp/minimal/mini.log out/minimal/ 2>/dev/null || true
           cp ep/doc/input-output-reference/input-output-reference.pdf out/ 2>/dev/null || true
           cp ep/doc/input-output-reference/pdftohtml-output*.html out/pdftohtml/ 2>/dev/null || true
           cp ep/doc/input-output-reference/pdftohtml-output*.png out/pdftohtml/ 2>/dev/null || true
