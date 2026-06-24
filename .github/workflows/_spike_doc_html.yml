@@ -25,6 +25,7 @@ jobs:
           mkdir -p /tmp/minimal && cd /tmp/minimal
           cat > mini.tex << 'EOF'
           \documentclass{article}
+          \usepackage[html,2]{tex4ht}
           \usepackage{hyperref}
           \begin{document}
           \section{Foo}\label{foo}
@@ -35,6 +36,8 @@ jobs:
           EOF
           xelatex -interaction=nonstopmode mini.tex || true
           xelatex -interaction=nonstopmode mini.tex || true
+          echo "=== confirm tex4ht.sty was actually loaded this time ==="
+          grep -c "tex4ht.sty" mini.log || echo "STILL NOT LOADED"
           tex4ht -.xdv mini || true
           t4ht mini || true
           echo "=== mini output files ==="
