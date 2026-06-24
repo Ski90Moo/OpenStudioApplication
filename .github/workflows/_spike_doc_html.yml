@@ -54,6 +54,14 @@ jobs:
           dpkg -L tex4ht 2>/dev/null | grep -i bin || true
           which make4ht htlatex htxelatex mk4ht 2>&1 || true
 
+      - name: Write per-document tex4ht config to use literal \label text as anchor ids
+        working-directory: ep/doc/input-output-reference
+        run: |
+          cat > input-output-reference.cfg << 'EOF'
+          \AtBeginDocument{\hypersetup{destlabel}}
+          EOF
+          cat input-output-reference.cfg
+
       - name: Convert to HTML via make4ht/htlatex
         working-directory: ep/doc/input-output-reference
         continue-on-error: true
@@ -75,6 +83,8 @@ jobs:
         run: |
           echo "=== tex4ht --help ===" ; tex4ht --help 2>&1 | head -40 || true
           echo "=== t4ht --help ===" ; t4ht --help 2>&1 | head -40 || true
+          echo "=== destlabel/label handling in tex4ht's hyperref hooks (diagnostic, in case our .cfg fix doesn't fully work) ===" ;
+          grep -n "destlabel\|label" /usr/share/texlive/texmf-dist/tex/generic/tex4ht/hyperref-hooks.4ht 2>/dev/null | head -30 || true
 
       - name: Manually drive tex4ht/t4ht postprocessing (wrapper skipped this due to missing-char warnings)
         working-directory: ep/doc/input-output-reference
