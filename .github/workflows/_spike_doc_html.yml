@@ -81,26 +81,26 @@ jobs:
         continue-on-error: true
         run: |
           export TEXINPUTS=..:
-          if ls *.html >/dev/null 2>&1; then
+          if ls input-output-reference*.html >/dev/null 2>&1; then
             echo "HTML already produced by wrapper, skipping manual postprocessing"
           else
             echo "ATTEMPT 1: t4ht alone"
-            t4ht input-output-reference "html,2,fn-in" > attempt1_t4ht.log 2>&1
-            ls *.html 2>/dev/null && echo "ATTEMPT1 (t4ht) SUCCESS" || true
+            t4ht input-output-reference > attempt1_t4ht.log 2>&1
+            ls input-output-reference*.html 2>/dev/null && echo "ATTEMPT1 (t4ht) SUCCESS" || true
           fi
-          if ! ls *.html >/dev/null 2>&1; then
+          if ! ls input-output-reference*.html >/dev/null 2>&1; then
             echo "ATTEMPT 2: tex4ht alone"
-            tex4ht input-output-reference "html,2,fn-in" > attempt2_tex4ht.log 2>&1
-            ls *.html 2>/dev/null && echo "ATTEMPT2 (tex4ht) SUCCESS" || true
+            tex4ht input-output-reference > attempt2_tex4ht.log 2>&1
+            ls input-output-reference*.html 2>/dev/null && echo "ATTEMPT2 (tex4ht) SUCCESS" || true
           fi
-          if ! ls *.html >/dev/null 2>&1; then
+          if ! ls input-output-reference*.html >/dev/null 2>&1; then
             echo "ATTEMPT 3: tex4ht then t4ht"
-            tex4ht input-output-reference "html,2,fn-in" > attempt3a_tex4ht.log 2>&1
-            t4ht input-output-reference "html,2,fn-in" > attempt3b_t4ht.log 2>&1
-            ls *.html 2>/dev/null && echo "ATTEMPT3 (tex4ht+t4ht) SUCCESS" || true
+            tex4ht input-output-reference > attempt3a_tex4ht.log 2>&1
+            t4ht input-output-reference > attempt3b_t4ht.log 2>&1
+            ls input-output-reference*.html 2>/dev/null && echo "ATTEMPT3 (tex4ht+t4ht) SUCCESS" || true
           fi
           echo "=== final dir listing ==="
-          ls -la *.html *.css *.log 2>/dev/null || echo "STILL NO HTML PRODUCED"
+          ls -la input-output-reference*.html *.css *.log 2>/dev/null || echo "STILL NO HTML PRODUCED"
 
       - name: Collect artifacts
         if: always()
