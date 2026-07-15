@@ -28,8 +28,15 @@ profile/
 
 *.sublime-workspace
 
-# Qt-generated files
-src/openstudio_lib/moc_*.cpp
+# Qt moc/rcc-generated files, wherever CMake drops them in the tree
+moc_*.cpp
+moc_*.cpp_parameters
+qrc_*.cpp
+*.qrc.depends
+**/__/
+*_autogen/
+.lupdate/
+.qt/
 
 *.sublime-project
 cmake-build-debug
@@ -45,3 +52,61 @@ clang_format.patch
 conan-cache
 .ccache
 CMakeUserPresets.json
+
+# This repo is built in-place at the repo root (not an out-of-source build/ dir), so
+# CMake/Conan/MSBuild drop generated files alongside tracked source. Ignore those.
+/CMakeCache.txt
+/CMakePresets.json
+/CPackConfig.cmake
+/CPackSourceConfig.cmake
+/cmakedeps_macros.cmake
+/conan_toolchain.cmake
+/conanbuild.bat
+/conanbuildenv-*.bat
+/conandeps_legacy.cmake
+/conanrun.bat
+/conanrunenv-*.bat
+/deactivate_conanbuild.bat
+/deactivate_conanrun.bat
+/*-Target-release.cmake
+/*-release-x86_64-data.cmake
+/*Config.cmake
+/*ConfigVersion.cmake
+/*Targets.cmake
+/*-config.cmake
+/*-config-version.cmake
+/Find*.cmake
+/module-*.cmake
+/get_output_vars.rb
+/output_vars_list.txt
+/aqtinstall.log
+/build_output.txt
+/Products/
+/_deps/
+/OpenStudio-3.11.0/
+
+# CMake-generated Visual Studio projects/solution, wherever they land
+CMakeFiles/
+cmake_install.cmake
+*.vcxproj
+*.vcxproj.filters
+*.sln
+
+# Compiled translation binaries (built from the tracked .ts sources)
+translations/*.qm
+
+__pycache__/
+
+# EnergyPlus local-docs workflow output (see ENERGYPLUS_DOCS_WORKFLOW.md, itself gitignored)
+/ENERGYPLUS_DOCS_WORKFLOW.md
+/EnergyPlus/
+/EnergyPlusDocsArchive/
+
+# configure_file()-generated from tracked .in templates; AnalyticsHelperSecrets.hxx in
+# particular is populated with real secret values at configure time -- never commit it.
+src/openstudio_lib/AnalyticsHelperSecrets.hxx
+src/openstudio_lib/AnalyticsHelperSecrets.hxx.tmp
+src/openstudio_app/AboutBox.hpp
+src/model_editor/AboutBox.hpp
+src/openstudio_app/OpenStudioApp.rc
+src/utilities/OpenStudioApplicationPathHelpers.cxx
